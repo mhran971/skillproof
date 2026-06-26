@@ -1,97 +1,103 @@
+import { ReactNode } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
+import {
+  LayoutDashboard, Trophy, FileText, User, Settings, Bell,
+  ChevronDown, LogOut, Award
+} from 'lucide-react';
 import { useState } from 'react';
-import { LayoutDashboard, User, FileText, Trophy, Settings, LogOut } from 'lucide-react';
 
-export default function CandidateLayout({ children }: { children: React.ReactNode }) {
-  const { t, i18n } = useTranslation();
+interface Props {
+  children: ReactNode;
+}
+
+export default function CandidateLayout({ children }: Props) {
+  const { t } = useTranslation();
   const { auth } = usePage().props as any;
-  const user = auth?.user;
+  const [profileOpen, setProfileOpen] = useState(false);
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const isRTL = i18n.language === 'ar';
-
-  const menuItems = [
-    { label: t('candidate.dashboard', 'Dashboard'), href: '/candidate/dashboard', icon: LayoutDashboard },
-    { label: t('candidate.profile', 'Profile'), href: '/candidate/profile', icon: User },
-    { label: t('candidate.submissions', 'Submissions'), href: '/candidate/submissions', icon: FileText },
-    { label: t('candidate.challenges', 'Challenges'), href: '/challenges', icon: Trophy },
-    { label: t('candidate.settings', 'Settings'), href: '/profile', icon: Settings },
+  const navItems = [
+    { href: '/candidate/dashboard', label: t('candidate.dashboard'), icon: LayoutDashboard },
+    { href: '/candidate/challenges', label: t('candidate.challenges'), icon: Trophy },
+    { href: '/candidate/submissions', label: t('candidate.submissions'), icon: FileText },
+    { href: '/candidate/profile', label: t('candidate.profile'), icon: User },
+    { href: '/candidate/settings', label: t('candidate.settings'), icon: Settings },
   ];
 
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen bg-gray-50">
-      {/* Mobile Header */}
-      <div className="lg:hidden bg-white border-b px-4 py-3 flex items-center justify-between">
-        <span className="font-bold text-xl text-indigo-600">SkillProof</span>
-        <button type="button" onClick={() => setSidebarOpen((s) => !s)} className="p-2" aria-label="Toggle sidebar">
-          <span className="text-gray-700">☰</span>
-        </button>
-      </div>
-
-      <div className="flex">
-        <aside
-          className={
-            'fixed lg:static inset-y-0 z-50 w-64 bg-white border-r shadow-lg lg:shadow-none transition-transform duration-200 ease-in-out ' +
-            (sidebarOpen
-              ? isRTL
-                ? 'right-0'
-                : 'left-0'
-              : isRTL
-                ? 'right-[-100%]'
-                : 'left-[-100%]')
-          }
-        >
-          <div className="p-6 border-b">
-            <h1 className="text-2xl font-bold text-indigo-600">SkillProof</h1>
-            <p className="text-sm text-gray-500 mt-1">{t('candidate.panel', 'Candidate panel')}</p>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <aside className="w-64 bg-white border-r hidden lg:flex flex-col">
+        <div className="p-6">
+          <Link href="/" className="text-xl font-bold text-indigo-600">
+            SkillProof
+          </Link>
+        </div>
+        <nav className="flex-1 px-4 space-y-1">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-600 rounded-lg hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+            >
+              <item.icon size={18} />
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="p-4 border-t">
+          <div className="flex items-center gap-2 px-3 py-2 mb-2">
+            <Award size={16} className="text-amber-500" />
+            <span className="text-sm font-medium text-gray-700">
+              {t('candidate.reputation')}: {auth?.user?.reputation_score || 0}
+            </span>
           </div>
+          <button className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 w-full">
+            <LogOut size={18} />
+            {t('auth.logout')}
+          </button>
+        </div>
+      </aside>
 
-          <nav className="p-4 space-y-1">
-            {menuItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Bar */}
+        <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
+          <h1 className="text-lg font-semibold text-gray-900">{t('candidate.area')}</h1>
+          <div className="flex items-center gap-4">
+            <button className="relative p-2 text-gray-500 hover:text-indigo-600">
+              <Bell size={20} />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="flex items-center gap-2 text-sm font-medium text-gray-700"
               >
-                <item.icon size={20} />
-                <span>{item.label}</span>
-              </Link>
-            ))}
-
-            <div className="pt-4 mt-4 border-t">
-              <Link
-                href="/logout"
-                method="post"
-                as="button"
-                className="flex w-full items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-              >
-                <LogOut size={20} />
-                <span>{t('auth.logout', 'Logout')}</span>
-              </Link>
-            </div>
-          </nav>
-        </aside>
-
-        {sidebarOpen && (
-          <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
-        )}
-
-        <main className="flex-1 p-6 lg:p-8 overflow-auto">
-          <div className="mb-6">
-            <div className="flex items-center justify-between gap-4">
-              <div className="text-gray-900">
-                {t('candidate.welcome', 'Welcome')}
-                {user?.name ? `, ${user.name}` : ''}
-              </div>
-              {user?.email && <div className="hidden sm:block text-sm text-gray-500">{user.email}</div>}
+                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+                  {auth?.user?.name?.charAt(0) || 'U'}
+                </div>
+                <span className="hidden sm:block">{auth?.user?.name || 'Candidate'}</span>
+                <ChevronDown size={14} />
+              </button>
+              {profileOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border py-1 z-50">
+                  <Link href="/candidate/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    {t('candidate.profile')}
+                  </Link>
+                  <Link href="/logout" method="post" className="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                    {t('auth.logout')}
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
+        </header>
+
+        <main className="flex-1 p-6 overflow-auto">
           {children}
         </main>
       </div>
     </div>
   );
 }
-

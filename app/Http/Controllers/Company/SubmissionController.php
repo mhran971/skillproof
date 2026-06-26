@@ -10,13 +10,16 @@ use App\Models\Challenge;
 use App\Models\Evaluation;
 use App\Models\Submission;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class SubmissionController extends Controller
 {
     public function index(Request $request)
     {
-        $company = auth()->user()->company;
+        $user = Auth::user();
+        $company = $user->company;
         if (!$company) abort(403);
 
         $challengeIds = Challenge::where('company_id', $company->id)->pluck('id');
@@ -54,7 +57,8 @@ class SubmissionController extends Controller
 
     public function show(Submission $submission)
     {
-        $this->authorize('view', $submission);
+        $user = Auth::user();
+        if (!$user->company || $submission->challenge->company_id !== $user->company->id) { abort(403); }
 
         $submission->load([
             'user.candidateProfile.skills',
@@ -78,7 +82,8 @@ class SubmissionController extends Controller
 
     public function evaluate(EvaluateSubmissionRequest $request, Submission $submission)
     {
-        $this->authorize('evaluate', $submission);
+        $user = Auth::user();
+        if (!$user->company || $submission->challenge->company_id !== $user->company->id) { abort(403); }
 
         $evaluation = Evaluation::updateOrCreate(
             [
@@ -109,9 +114,10 @@ class SubmissionController extends Controller
             ->with('success', $request->boolean('is_final') ? 'Final evaluation saved.' : 'Evaluation saved as draft.');
     }
 
-    public function downloadFile(Submission $submission, $fileId)
+    public function downloadFile(Submission $submission, int $fileId)
     {
-        $this->authorize('view', $submission);
+        $user = Auth::user();
+        if (!$user->company || $submission->challenge->company_id !== $user->company->id) { abort(403); }
 
         $file = $submission->files()->findOrFail($fileId);
 

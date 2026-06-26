@@ -26,7 +26,7 @@ class SubmissionController extends Controller
 
     public function show(Submission $submission)
     {
-        $this->authorize('view', $submission);
+        if ($submission->user_id !== Auth::id()) { abort(403); }
 
         $submission->load([
             'challenge',
@@ -100,7 +100,7 @@ class SubmissionController extends Controller
 
     public function edit(Submission $submission)
     {
-        $this->authorize('update', $submission);
+        if ($submission->user_id !== Auth::id()) { abort(403); }
 
         if ($submission->status !== 'draft') {
             return redirect()->route('candidate.submissions.show', $submission)
@@ -116,7 +116,7 @@ class SubmissionController extends Controller
 
     public function update(Request $request, Submission $submission)
     {
-        $this->authorize('update', $submission);
+        if ($submission->user_id !== Auth::id()) { abort(403); }
 
         if ($submission->status !== 'draft') {
             abort(403, 'Only draft submissions can be updated.');
@@ -162,7 +162,7 @@ class SubmissionController extends Controller
 
     public function destroy(Submission $submission)
     {
-        $this->authorize('delete', $submission);
+        if ($submission->user_id !== Auth::id()) { abort(403); }
 
         // Delete associated files from storage
         foreach ($submission->files as $file) {
@@ -177,7 +177,7 @@ class SubmissionController extends Controller
 
     public function submit(Submission $submission)
     {
-        $this->authorize('update', $submission);
+        if ($submission->user_id !== Auth::id()) { abort(403); }
 
         if ($submission->status !== 'draft') {
             return redirect()->back()->with('error', __('Only draft submissions can be submitted.'));

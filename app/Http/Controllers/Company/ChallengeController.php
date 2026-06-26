@@ -9,6 +9,7 @@ use App\Http\Resources\CompanyChallengeResource;
 use App\Models\Challenge;
 use App\Models\Skill;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -17,7 +18,8 @@ class ChallengeController extends Controller
 {
     public function index(Request $request)
     {
-        $company = auth()->user()->company;
+        $user = Auth::user();
+        $company = $user->company;
         if (!$company) abort(403);
 
         $query = Challenge::with(['requiredSkills', 'submissions'])
@@ -45,7 +47,8 @@ class ChallengeController extends Controller
 
     public function create()
     {
-        $company = auth()->user()->company;
+        $user = Auth::user();
+        $company = $user->company;
         if (!$company) abort(403);
 
         return Inertia::render('Company/Challenges/Create', [
@@ -56,7 +59,8 @@ class ChallengeController extends Controller
 
     public function store(StoreChallengeRequest $request)
     {
-        $company = auth()->user()->company;
+        $user = Auth::user();
+        $company = $user->company;
         if (!$company) abort(403);
 
         $challenge = Challenge::create([
@@ -90,7 +94,8 @@ class ChallengeController extends Controller
 
     public function show(Challenge $challenge)
     {
-        $this->authorize('view', $challenge);
+        $user = Auth::user();
+        if (!$user->company || $challenge->company_id !== $user->company->id) { abort(403); }
 
         return Inertia::render('Company/Challenges/Show', [
             'challenge' => new CompanyChallengeResource($challenge->load([
@@ -101,7 +106,8 @@ class ChallengeController extends Controller
 
     public function edit(Challenge $challenge)
     {
-        $this->authorize('update', $challenge);
+        $user = Auth::user();
+        if (!$user->company || $challenge->company_id !== $user->company->id) { abort(403); }
 
         return Inertia::render('Company/Challenges/Edit', [
             'challenge' => new CompanyChallengeResource($challenge->load('requiredSkills')),
@@ -112,7 +118,8 @@ class ChallengeController extends Controller
 
     public function update(UpdateChallengeRequest $request, Challenge $challenge)
     {
-        $this->authorize('update', $challenge);
+        $user = Auth::user();
+        if (!$user->company || $challenge->company_id !== $user->company->id) { abort(403); }
 
         $data = [
             'title' => $request->title,
@@ -147,7 +154,8 @@ class ChallengeController extends Controller
 
     public function destroy(Challenge $challenge)
     {
-        $this->authorize('delete', $challenge);
+        $user = Auth::user();
+        if (!$user->company || $challenge->company_id !== $user->company->id) { abort(403); }
 
         if ($challenge->attachment_path && Storage::disk('public')->exists($challenge->attachment_path)) {
             Storage::disk('public')->delete($challenge->attachment_path);
@@ -161,7 +169,8 @@ class ChallengeController extends Controller
 
     public function togglePublish(Challenge $challenge)
     {
-        $this->authorize('update', $challenge);
+        $user = Auth::user();
+        if (!$user->company || $challenge->company_id !== $user->company->id) { abort(403); }
 
         $challenge->update(['is_published' => !$challenge->is_published]);
 

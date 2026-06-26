@@ -4,41 +4,76 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Challenge extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'company_id', 'title', 'slug', 'description', 'requirements', 'deliverables',
-        'difficulty', 'category_id', 'industry', 'duration_hours', 'deadline',
-        'max_participants', 'reward', 'badge_id', 'evaluation_criteria',
-        'required_skills', 'is_published', 'is_featured', 'visibility', 'created_by',
+        'company_id',
+        'title',
+        'slug',
+        'description',
+        'requirements',
+        'deliverables',
+        'difficulty_level',
+        'duration_hours',
+        'deadline',
+        'max_participants',
+        'is_published',
+        'reward_description',
+        'evaluation_criteria',
+        'passing_score',
     ];
 
     protected function casts(): array
     {
         return [
             'deadline' => 'datetime',
-            'evaluation_criteria' => 'array',
-            'required_skills' => 'array',
             'is_published' => 'boolean',
-            'is_featured' => 'boolean',
             'duration_hours' => 'integer',
             'max_participants' => 'integer',
+            'evaluation_criteria' => 'array',
+            'passing_score' => 'integer',
         ];
     }
 
-    public function company()
+    // ============================================================
+    // RELATIONSHIPS
+    // ============================================================
+
+    public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
     }
 
-    public function submissions()
+    public function requiredSkills(): BelongsToMany
     {
-        return $this->hasMany(ChallengeSubmission::class);
+        return $this->belongsToMany(Skill::class, 'challenge_skills')
+            ->withTimestamps();
     }
 
-    // NOTE: category/required skills relations require pivot tables.
-}
+    public function submissions(): HasMany
+    {
+        return $this->hasMany(Submission::class);
+    }
 
+    // ============================================================
+    // SCOPES
+    // ============================================================
+
+    public function scopePublished($query)
+    {
+        return $query->where('is_published', true);
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('deadline')->orWhere('deadline', '>', now());
+        });
+    }
+}

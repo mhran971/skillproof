@@ -23,7 +23,6 @@ class AppServiceProvider extends ServiceProvider
         Vite::prefetch(concurrency: 3);
         Gate::policy(\App\Models\Challenge::class, \App\Policies\ChallengePolicy::class);
         Gate::policy(\App\Models\Submission::class, \App\Policies\SubmissionPolicy::class);
-        Gate::policy(\App\Models\User::class, \App\Policies\UserPolicy::class);
     
     }
 }

@@ -12,7 +12,8 @@ class ChallengeController extends Controller
 {
     public function index()
     {
-        $joinedChallengeIds = Auth::user()->submissions()
+        $user = Auth::user();
+        $joinedChallengeIds = $user->submissions()
             ->pluck('challenge_id')
             ->toArray();
 
@@ -26,7 +27,7 @@ class ChallengeController extends Controller
             ->take(10)
             ->get();
 
-        $myChallenges = Auth::user()->submissions()
+        $myChallenges = $user->submissions()
             ->with(['challenge:id,title,slug,company_id', 'challenge.company:id,name,logo,slug'])
             ->latest()
             ->take(10)
@@ -41,8 +42,9 @@ class ChallengeController extends Controller
     public function show(Challenge $challenge)
     {
         $challenge->load(['company:id,name,logo,slug,description,website,location', 'requiredSkills:id,name']);
+        $user = Auth::user();
 
-        $submission = Auth::user()->submissions()
+        $submission = $user->submissions()
             ->where('challenge_id', $challenge->id)
             ->first();
 
@@ -63,8 +65,10 @@ class ChallengeController extends Controller
             abort(403, 'This challenge has expired.');
         }
 
+        $user = Auth::user();
+
         // Check if user already joined
-        $existingSubmission = Auth::user()->submissions()
+        $existingSubmission = $user->submissions()
             ->where('challenge_id', $challenge->id)
             ->first();
 
