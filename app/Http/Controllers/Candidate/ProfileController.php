@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Candidate;
 
 use App\Http\Controllers\Controller;
+use App\Models\CandidateProfile;
 use App\Models\Skill;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,7 +14,8 @@ class ProfileController extends Controller
 {
     public function edit()
     {
-        $user = Auth::user()->load('candidateProfile', 'skills:id,name,category_id');
+        $user = Auth::user();
+        $user->load('candidateProfile', 'skills:id,name,category_id');
 
         return Inertia::render('Candidate/Profile/Edit', [
             'user' => $user,

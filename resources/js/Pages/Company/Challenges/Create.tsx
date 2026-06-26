@@ -203,6 +203,11 @@ export default function Create({ availableSkills, difficulty_levels }: Props) {
               ))}
             </div>
             {errors.evaluation_criteria && <p className="text-red-500 text-sm mt-2">{errors.evaluation_criteria}</p>}
+            {criteria.map((_, index) => (errors as any)[`evaluation_criteria.${index}.name`] && (
+                <p key={index} className="text-red-500 text-sm mt-1">
+                    {(errors as any)[`evaluation_criteria.${index}.name`]}
+                </p>
+            ))}
             {totalWeight !== 100 && <p className="text-yellow-600 text-sm mt-2 flex items-center gap-1"><AlertTriangle size={14} /> {t('company.weight_must_be_100')}</p>}
           </div>
 

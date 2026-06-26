@@ -1,84 +1,93 @@
+import { ReactNode } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
-import { 
-  LayoutDashboard, Trophy, FileText, Building2, 
-  Settings, LogOut, Menu, X, BarChart3, Users 
+import {
+  LayoutDashboard, Trophy, FileText, Settings, Bell,
+  ChevronDown, LogOut, Building2
 } from 'lucide-react';
 import { useState } from 'react';
 
-export default function CompanyLayout({ children }: { children: React.ReactNode }) {
-  const { t, i18n } = useTranslation();
-  const { auth } = usePage().props as any;
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const isRTL = i18n.language === 'ar';
+interface Props {
+  children: ReactNode;
+}
 
-  const menuItems = [
-    { label: t('company.dashboard'), href: '/company/dashboard', icon: LayoutDashboard },
-    { label: t('company.challenges'), href: '/company/challenges', icon: Trophy },
-    { label: t('company.submissions'), href: '/company/submissions', icon: FileText },
-    { label: t('company.analytics'), href: '/company/analytics', icon: BarChart3 },
-    { label: t('company.settings'), href: '/company/settings', icon: Settings },
+export default function CompanyLayout({ children }: Props) {
+  const { t } = useTranslation();
+  const { auth } = usePage().props as any;
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const navItems = [
+    { href: '/company/dashboard', label: t('company.dashboard'), icon: LayoutDashboard },
+    { href: '/company/challenges', label: t('company.challenges'), icon: Trophy },
+    { href: '/company/submissions', label: t('company.submissions'), icon: FileText },
+    { href: '/company/settings', label: t('company.settings'), icon: Settings },
   ];
 
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen bg-gray-50">
-      {/* Mobile Header */}
-      <div className="lg:hidden bg-white border-b px-4 py-3 flex items-center justify-between">
-        <span className="font-bold text-xl text-indigo-600">SkillProof</span>
-        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2">
-          {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar */}
+      <aside className="w-64 bg-white border-r hidden lg:flex flex-col">
+        <div className="p-6">
+          <Link href="/" className="text-xl font-bold text-indigo-600">
+            SkillProof
+          </Link>
+        </div>
+        <nav className="flex-1 px-4 space-y-1">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-gray-600 rounded-lg hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+            >
+              <item.icon size={18} />
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="p-4 border-t">
+          <button className="flex items-center gap-3 px-3 py-2.5 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 w-full">
+            <LogOut size={18} />
+            {t('auth.logout')}
+          </button>
+        </div>
+      </aside>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className={`
-          fixed lg:static inset-y-0 ${isRTL ? 'right-0' : 'left-0'} z-50
-          w-64 bg-white border-r shadow-lg lg:shadow-none
-          transform transition-transform duration-200 ease-in-out
-          ${sidebarOpen ? 'translate-x-0' : `${isRTL ? 'translate-x-full' : '-translate-x-full'} lg:translate-x-0`}
-        `}>
-          <div className="p-6 border-b">
-            <h1 className="text-2xl font-bold text-indigo-600">SkillProof</h1>
-            <p className="text-sm text-gray-500 mt-1">{t('company.area')}</p>
-          </div>
-
-          <nav className="p-4 space-y-1">
-            {menuItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Bar */}
+        <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
+          <h1 className="text-lg font-semibold text-gray-900">{t('company.area')}</h1>
+          <div className="flex items-center gap-4">
+            <button className="relative p-2 text-gray-500 hover:text-indigo-600">
+              <Bell size={20} />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="flex items-center gap-2 text-sm font-medium text-gray-700"
               >
-                <item.icon size={20} />
-                <span>{item.label}</span>
-              </Link>
-            ))}
-
-            <div className="pt-4 mt-4 border-t">
-              <Link
-                href="/logout"
-                method="post"
-                as="button"
-                className="flex w-full items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-              >
-                <LogOut size={20} />
-                <span>{t('auth.logout')}</span>
-              </Link>
+                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+                  {auth?.user?.name?.charAt(0) || 'C'}
+                </div>
+                <span className="hidden sm:block">{auth?.user?.name || 'Company'}</span>
+                <ChevronDown size={14} />
+              </button>
+              {profileOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border py-1 z-50">
+                  <Link href="/company/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    {t('company.profile')}
+                  </Link>
+                  <Link href="/logout" method="post" className="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                    {t('auth.logout')}
+                  </Link>
+                </div>
+              )}
             </div>
-          </nav>
-        </aside>
+          </div>
+        </header>
 
-        {/* Overlay */}
-        {sidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        {/* Main Content */}
-        <main className="flex-1 p-6 lg:p-8 overflow-auto">
+        <main className="flex-1 p-6 overflow-auto">
           {children}
         </main>
       </div>

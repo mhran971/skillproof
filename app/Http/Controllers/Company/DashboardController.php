@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Challenge;
 use App\Models\Submission;
 use App\Models\Evaluation;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class DashboardController extends Controller

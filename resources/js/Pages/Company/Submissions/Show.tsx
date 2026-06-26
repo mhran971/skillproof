@@ -2,7 +2,7 @@ import CompanyLayout from '@/Components/Layout/CompanyLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
 import { 
-  ArrowLeft, Star, FileText, Globe, Github, Download, 
+  ArrowLeft, Star, FileText, Globe, Github as GithubIcon, Download,
   MessageSquare, CheckCircle, XCircle, AlertTriangle, 
   Send, Save, User, Clock, Building2, Award 
 } from 'lucide-react';
@@ -220,7 +220,7 @@ export default function Show({ submission, evaluation, canEvaluate }: Props) {
                 <div className="space-y-3">
                   {submission.repository_url && (
                     <a href={submission.repository_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
-                      <Github size={20} className="text-gray-700" />
+                      <GithubIcon size={20} className="text-gray-700" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">{submission.repository_url}</p>
                         <p className="text-xs text-gray-500">{t('company.repository')}</p>
@@ -306,6 +306,15 @@ export default function Show({ submission, evaluation, canEvaluate }: Props) {
                           ))}
                         </div>
                       )}
+                      <div className="flex items-center gap-2 mb-3">
+                          <input
+                            type="checkbox"
+                            checked={!!evalItem.is_final}
+                            readOnly
+                            className="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500"
+                          />
+                          <span className="text-sm text-gray-600">{t('company.final_evaluation')}</span>
+                      </div>
                       <p className="text-sm text-gray-600 bg-white border rounded-lg p-3 whitespace-pre-line">{evalItem.feedback}</p>
                     </div>
                   ))}

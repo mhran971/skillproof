@@ -3,7 +3,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
 import { 
   Search, MapPin, Star, Award, Filter, X, 
-  SlidersHorizontal, Briefcase, CheckCircle 
+  SlidersHorizontal, Briefcase, CheckCircle, Users
 } from 'lucide-react';
 import { useState, FormEvent } from 'react';
 
@@ -39,7 +39,7 @@ interface Props {
   experienceLevels: string[];
 }
 
-export default function Index({ candidates, filters, allSkills, experienceLevels }: Props) {
+export default function Index({ candidates = { data: [] }, filters = {}, allSkills = [], experienceLevels = [] }: any) {
   const { t } = useTranslation();
   const [search, setSearch] = useState(filters.search || '');
   const [selectedSkills, setSelectedSkills] = useState<string[]>(

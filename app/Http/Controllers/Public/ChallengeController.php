@@ -7,6 +7,7 @@ use App\Http\Resources\PublicChallengeResource;
 use App\Models\Challenge;
 use App\Models\Skill;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class ChallengeController extends Controller

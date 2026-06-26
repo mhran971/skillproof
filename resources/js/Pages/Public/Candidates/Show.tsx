@@ -2,7 +2,7 @@ import PublicLayout from '@/Components/Layout/PublicLayout';
 import { Head, Link } from '@inertiajs/react';
 import { useTranslation } from 'react-i18next';
 import { 
-  MapPin, Link as LinkIcon, Github, Linkedin, Star, 
+  MapPin, Link as LinkIcon, Github as GithubIcon, Linkedin as LinkedinIcon, Star,
   Award, Briefcase, Calendar, Trophy, Building2, 
   ArrowLeft, CheckCircle, Globe, Mail 
 } from 'lucide-react';
@@ -118,13 +118,13 @@ export default function Show({ candidate, stats }: Props) {
                   )}
                   {candidate.github && (
                     <a href={candidate.github} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-indigo-600 transition-colors">
-                      <Github size={14} />
+                      <GithubIcon size={14} />
                       GitHub
                     </a>
                   )}
                   {candidate.linkedin && (
                     <a href={candidate.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-indigo-600 transition-colors">
-                      <Linkedin size={14} />
+                      <LinkedinIcon size={14} />
                       LinkedIn
                     </a>
                   )}

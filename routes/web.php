@@ -26,6 +26,13 @@ Route::get('/', function () {
     return redirect()->route('public.challenges.index');
 })->name('home');
 
+Route::get('/dashboard', function () {
+    if (auth()->user()->hasRole('company')) {
+        return redirect()->route('company.dashboard');
+    }
+    return redirect()->route('candidate.dashboard');
+})->middleware(['auth'])->name('dashboard');
+
 Route::get('/challenges', [PublicChallengeController::class, 'index'])->name('public.challenges.index');
 Route::get('/challenges/{slug}', [PublicChallengeController::class, 'show'])->name('public.challenges.show');
 
@@ -127,7 +134,8 @@ Route::middleware('auth')->prefix('notifications')->name('notifications.')->grou
 */
 
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [\App\Http\Controllers\ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+require __DIR__.'/auth.php';
