@@ -11,16 +11,14 @@ class EvaluationResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'evaluator' => [
+                'id' => $this->reviewer->id,
+                'name' => $this->reviewer->name,
+            ],
             'score' => $this->score,
             'feedback' => $this->feedback,
-            'criteria_scores' => $this->criteria_scores,
             'is_final' => $this->is_final,
-            'evaluator' => $this->whenLoaded('evaluator', fn () => [
-                'id' => $this->evaluator->id,
-                'name' => $this->evaluator->name,
-            ]),
             'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
         ];
     }
 }

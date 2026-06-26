@@ -3,7 +3,7 @@ namespace App\Http\Controllers\Candidate;
 
 use App\Http\Controllers\Controller;
 use App\Models\Challenge;
-use App\Models\Submission;
+use App\Models\ChallengeSubmission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -13,25 +13,29 @@ class SubmissionController extends Controller
 {
     public function index()
     {
-        $submissions = Auth::user()->submissions()
-            ->with(['challenge:id,title,slug,company_id', 'challenge.company:id,name,logo,slug', 'evaluations' => fn ($q) => $q->where('is_final', true)])
+        $profile = Auth::user()->candidateProfile;
+        if (!$profile) abort(403, 'Candidate profile not found.');
+
+        $submissions = ChallengeSubmission::where('candidate_profile_id', $profile->id)
+            ->with(['challenge:id,title,slug,company_id', 'challenge.company:id,name,logo,slug', 'reviews' => fn ($q) => $q->where('is_final', true)])
             ->latest()
             ->paginate(12);
 
         return Inertia::render('Candidate/Submissions/Index', [
             'submissions' => $submissions,
-            'statuses' => ['draft', 'submitted', 'under_review', 'accepted', 'rejected'],
+            'statuses' => ['draft', 'submitted', 'under_review', 'evaluated', 'accepted', 'rejected'],
         ]);
     }
 
-    public function show(Submission $submission)
+    public function show(ChallengeSubmission $submission)
     {
-        if ($submission->user_id !== Auth::id()) { abort(403); }
+        $profile = Auth::user()->candidateProfile;
+        if (!$profile || $submission->candidate_profile_id !== $profile->id) { abort(403); }
 
         $submission->load([
             'challenge',
             'challenge.company:id,name,logo,slug',
-            'evaluations.evaluator:id,name',
+            'reviews.reviewer:id,name',
             'files',
         ]);
 
@@ -42,8 +46,11 @@ class SubmissionController extends Controller
 
     public function create(Challenge $challenge)
     {
+        $profile = Auth::user()->candidateProfile;
+        if (!$profile) abort(403, 'Candidate profile not found.');
+
         // Check if user already has a submission for this challenge
-        $existingSubmission = Auth::user()->submissions()
+        $existingSubmission = ChallengeSubmission::where('candidate_profile_id', $profile->id)
             ->where('challenge_id', $challenge->id)
             ->first();
 
@@ -58,21 +65,24 @@ class SubmissionController extends Controller
 
     public function store(Request $request, Challenge $challenge)
     {
+        $profile = Auth::user()->candidateProfile;
+        if (!$profile) abort(403, 'Candidate profile not found.');
+
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'solution_url' => 'nullable|url|max:500',
-            'repository_url' => 'nullable|url|max:500',
+            'github_url' => 'nullable|url|max:255',
+            'live_url' => 'nullable|url|max:255',
+            'document_url' => 'nullable|url|max:255',
+            'notes' => 'nullable|string',
             'files.*' => 'nullable|file|max:10240', // 10MB max per file
         ]);
 
-        $submission = Submission::create([
+        $submission = ChallengeSubmission::create([
             'challenge_id' => $challenge->id,
-            'user_id' => Auth::id(),
-            'title' => $validated['title'],
-            'description' => $validated['description'],
-            'solution_url' => $validated['solution_url'] ?? null,
-            'repository_url' => $validated['repository_url'] ?? null,
+            'candidate_profile_id' => $profile->id,
+            'github_url' => $validated['github_url'] ?? null,
+            'live_url' => $validated['live_url'] ?? null,
+            'document_url' => $validated['document_url'] ?? null,
+            'notes' => $validated['notes'] ?? null,
             'status' => $request->boolean('submit_now') ? 'submitted' : 'draft',
             'submitted_at' => $request->boolean('submit_now') ? now() : null,
         ]);
@@ -98,9 +108,10 @@ class SubmissionController extends Controller
             ->with('success', $message);
     }
 
-    public function edit(Submission $submission)
+    public function edit(ChallengeSubmission $submission)
     {
-        if ($submission->user_id !== Auth::id()) { abort(403); }
+        $profile = Auth::user()->candidateProfile;
+        if (!$profile || $submission->candidate_profile_id !== $profile->id) { abort(403); }
 
         if ($submission->status !== 'draft') {
             return redirect()->route('candidate.submissions.show', $submission)
@@ -114,27 +125,28 @@ class SubmissionController extends Controller
         ]);
     }
 
-    public function update(Request $request, Submission $submission)
+    public function update(Request $request, ChallengeSubmission $submission)
     {
-        if ($submission->user_id !== Auth::id()) { abort(403); }
+        $profile = Auth::user()->candidateProfile;
+        if (!$profile || $submission->candidate_profile_id !== $profile->id) { abort(403); }
 
         if ($submission->status !== 'draft') {
             abort(403, 'Only draft submissions can be updated.');
         }
 
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'solution_url' => 'nullable|url|max:500',
-            'repository_url' => 'nullable|url|max:500',
+            'github_url' => 'nullable|url|max:255',
+            'live_url' => 'nullable|url|max:255',
+            'document_url' => 'nullable|url|max:255',
+            'notes' => 'nullable|string',
             'files.*' => 'nullable|file|max:10240',
         ]);
 
         $submission->update([
-            'title' => $validated['title'],
-            'description' => $validated['description'],
-            'solution_url' => $validated['solution_url'] ?? null,
-            'repository_url' => $validated['repository_url'] ?? null,
+            'github_url' => $validated['github_url'] ?? null,
+            'live_url' => $validated['live_url'] ?? null,
+            'document_url' => $validated['document_url'] ?? null,
+            'notes' => $validated['notes'] ?? null,
             'status' => $request->boolean('submit_now') ? 'submitted' : 'draft',
             'submitted_at' => $request->boolean('submit_now') ? now() : $submission->submitted_at,
         ]);
@@ -160,9 +172,10 @@ class SubmissionController extends Controller
             ->with('success', $message);
     }
 
-    public function destroy(Submission $submission)
+    public function destroy(ChallengeSubmission $submission)
     {
-        if ($submission->user_id !== Auth::id()) { abort(403); }
+        $profile = Auth::user()->candidateProfile;
+        if (!$profile || $submission->candidate_profile_id !== $profile->id) { abort(403); }
 
         // Delete associated files from storage
         foreach ($submission->files as $file) {
@@ -175,9 +188,10 @@ class SubmissionController extends Controller
             ->with('success', __('Submission deleted successfully.'));
     }
 
-    public function submit(Submission $submission)
+    public function submit(ChallengeSubmission $submission)
     {
-        if ($submission->user_id !== Auth::id()) { abort(403); }
+        $profile = Auth::user()->candidateProfile;
+        if (!$profile || $submission->candidate_profile_id !== $profile->id) { abort(403); }
 
         if ($submission->status !== 'draft') {
             return redirect()->back()->with('error', __('Only draft submissions can be submitted.'));

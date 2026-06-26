@@ -7,8 +7,8 @@ use App\Http\Requests\Company\EvaluateSubmissionRequest;
 use App\Http\Resources\CompanySubmissionResource;
 use App\Http\Resources\EvaluationResource;
 use App\Models\Challenge;
-use App\Models\Evaluation;
-use App\Models\Submission;
+use App\Models\SubmissionReview;
+use App\Models\ChallengeSubmission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -24,7 +24,7 @@ class SubmissionController extends Controller
 
         $challengeIds = Challenge::where('company_id', $company->id)->pluck('id');
 
-        $query = Submission::with(['user:id,name,email,avatar', 'challenge:id,title,slug', 'evaluations'])
+        $query = ChallengeSubmission::with(['candidateProfile.user:id,name,email,avatar', 'challenge:id,title,slug', 'reviews'])
             ->whereIn('challenge_id', $challengeIds)
             ->where('status', '!=', 'draft')
             ->latest();
@@ -38,7 +38,7 @@ class SubmissionController extends Controller
         }
 
         if ($search = $request->input('search')) {
-            $query->whereHas('user', function ($q) use ($search) {
+            $query->whereHas('candidateProfile.user', function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%");
             });
@@ -55,45 +55,46 @@ class SubmissionController extends Controller
         ]);
     }
 
-    public function show(Submission $submission)
+    public function show(ChallengeSubmission $submission)
     {
         $user = Auth::user();
         if (!$user->company || $submission->challenge->company_id !== $user->company->id) { abort(403); }
 
         $submission->load([
-            'user.candidateProfile.skills',
+            'candidateProfile.user',
+            'candidateProfile.skills',
             'challenge.company',
             'challenge.requiredSkills',
             'challenge.evaluation_criteria',
             'files',
-            'evaluations.evaluator',
+            'reviews.reviewer',
         ]);
 
-        $existingEvaluation = Evaluation::where('submission_id', $submission->id)
-            ->where('evaluator_id', auth()->id())
+        $existingReview = SubmissionReview::where('submission_id', $submission->id)
+            ->where('reviewer_id', auth()->id())
             ->first();
 
         return Inertia::render('Company/Submissions/Show', [
             'submission' => new CompanySubmissionResource($submission),
-            'evaluation' => $existingEvaluation ? new EvaluationResource($existingEvaluation) : null,
+            'evaluation' => $existingReview ? new EvaluationResource($existingReview) : null,
             'canEvaluate' => auth()->user()->can('evaluate', $submission),
         ]);
     }
 
-    public function evaluate(EvaluateSubmissionRequest $request, Submission $submission)
+    public function evaluate(EvaluateSubmissionRequest $request, ChallengeSubmission $submission)
     {
         $user = Auth::user();
         if (!$user->company || $submission->challenge->company_id !== $user->company->id) { abort(403); }
 
-        $evaluation = Evaluation::updateOrCreate(
+        $review = SubmissionReview::updateOrCreate(
             [
                 'submission_id' => $submission->id,
-                'evaluator_id' => auth()->id(),
+                'reviewer_id' => auth()->id(),
             ],
             [
                 'score' => $request->score,
                 'feedback' => $request->feedback,
-                'criteria_scores' => $request->criteria_scores,
+                'criterion_name' => 'Overall', // Simplified
                 'is_final' => $request->boolean('is_final', false),
             ]
         );
@@ -101,10 +102,12 @@ class SubmissionController extends Controller
         if ($request->boolean('is_final', false)) {
             $submission->update([
                 'status' => $request->boolean('accept') ? 'accepted' : 'rejected',
+                'final_score' => $request->score,
+                'evaluated_at' => now(),
             ]);
 
             if ($request->boolean('accept')) {
-                $submission->user->candidateProfile?->increment('reputation_score', 10);
+                $submission->candidateProfile?->increment('reputation_score', 10);
             }
         } else {
             $submission->update(['status' => 'under_review']);
@@ -114,7 +117,7 @@ class SubmissionController extends Controller
             ->with('success', $request->boolean('is_final') ? 'Final evaluation saved.' : 'Evaluation saved as draft.');
     }
 
-    public function downloadFile(Submission $submission, int $fileId)
+    public function downloadFile(ChallengeSubmission $submission, int $fileId)
     {
         $user = Auth::user();
         if (!$user->company || $submission->challenge->company_id !== $user->company->id) { abort(403); }

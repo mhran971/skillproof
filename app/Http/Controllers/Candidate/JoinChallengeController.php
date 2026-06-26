@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Candidate;
 
 use App\Http\Controllers\Controller;
 use App\Models\Challenge;
-use App\Models\Submission;
+use App\Models\ChallengeSubmission;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 
@@ -17,9 +17,13 @@ class JoinChallengeController extends Controller
                 ->with('info', __('Please log in to join this challenge.'));
         }
 
-        if (!Auth::user()->hasRole('candidate')) {
+        $user = Auth::user();
+        if (!$user->hasRole('candidate')) {
             abort(403, __('Only candidates can join challenges.'));
         }
+
+        $profile = $user->candidateProfile;
+        if (!$profile) abort(403, 'Candidate profile not found.');
 
         if (!$challenge->is_published) {
             abort(403, __('This challenge is not available.'));
@@ -29,12 +33,12 @@ class JoinChallengeController extends Controller
             abort(403, __('This challenge has expired.'));
         }
 
-        $existingSubmission = Auth::user()->submissions()
+        $existingChallengeSubmission = ChallengeSubmission::where('candidate_profile_id', $profile->id)
             ->where('challenge_id', $challenge->id)
             ->first();
 
-        if ($existingSubmission) {
-            return redirect()->route('candidate.submissions.edit', $existingSubmission)
+        if ($existingChallengeSubmission) {
+            return redirect()->route('candidate.submissions.edit', $existingChallengeSubmission)
                 ->with('info', __('You have already joined this challenge.'));
         }
 
@@ -45,11 +49,9 @@ class JoinChallengeController extends Controller
             }
         }
 
-        $submission = Submission::create([
+        $submission = ChallengeSubmission::create([
             'challenge_id' => $challenge->id,
-            'user_id' => Auth::id(),
-            'title' => 'Draft: ' . $challenge->title,
-            'description' => '',
+            'candidate_profile_id' => $profile->id,
             'status' => 'draft',
         ]);
 

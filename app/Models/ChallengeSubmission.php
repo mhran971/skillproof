@@ -45,4 +45,3 @@ class ChallengeSubmission extends Model
         return $this->hasMany(SubmissionReview::class, 'submission_id');
     }
 }
-

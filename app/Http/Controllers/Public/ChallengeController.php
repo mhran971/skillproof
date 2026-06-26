@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Public;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PublicChallengeResource;
 use App\Models\Challenge;
+use App\Models\ChallengeSubmission;
 use App\Models\Skill;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -68,7 +69,7 @@ class ChallengeController extends Controller
         $challenge = Challenge::with([
             'company:id,name,logo,slug,description,website,location',
             'requiredSkills:id,name',
-            'submissions' => fn ($q) => $q->where('status', 'accepted')->with('user:id,name,avatar')->take(5),
+            'submissions' => fn ($q) => $q->where('status', 'accepted')->with('candidateProfile.user:id,name,avatar')->take(5),
         ])
         ->where('is_published', true)
         ->where(function ($q) {
@@ -81,20 +82,22 @@ class ChallengeController extends Controller
         $userSubmission = null;
 
         if (auth()->check() && auth()->user()->hasRole('candidate')) {
-            $userSubmission = $challenge->submissions()
-                ->where('user_id', auth()->id())
-                ->first(['id', 'status']);
+            $profile = auth()->user()->candidateProfile;
+            if ($profile) {
+                $userSubmission = ChallengeSubmission::where('candidate_profile_id', $profile->id)
+                    ->where('challenge_id', $challenge->id)
+                    ->first(['id', 'status']);
 
-            $hasSubmitted = $userSubmission !== null;
+                $hasSubmitted = $userSubmission !== null;
+            }
         }
 
         $stats = [
             'total_submissions' => $challenge->submissions()->where('status', '!=', 'draft')->count(),
             'accepted_count' => $challenge->submissions()->where('status', 'accepted')->count(),
             'avg_score' => $challenge->submissions()
-                ->whereHas('evaluations', fn ($q) => $q->where('is_final', true))
-                ->withAvg('evaluations as avg_score', 'score')
-                ->value('avg_score') ?? 0,
+                ->whereNotNull('final_score')
+                ->avg('final_score') ?? 0,
         ];
 
         return Inertia::render('Public/Challenges/Show', [

@@ -60,7 +60,7 @@ class CompanyController extends Controller
                     $q->whereNull('deadline')->orWhere('deadline', '>', now());
                 })->count(),
             'total_submissions' => $company->challenges()->withCount('submissions')->get()->sum('submissions_count'),
-            'accepted_candidates' => \App\Models\Submission::whereHas('challenge', fn ($q) => $q->where('company_id', $company->id))
+            'accepted_candidates' => \App\Models\ChallengeSubmission::whereHas('challenge', fn ($q) => $q->where('company_id', $company->id))
                 ->where('status', 'accepted')
                 ->count(),
         ];

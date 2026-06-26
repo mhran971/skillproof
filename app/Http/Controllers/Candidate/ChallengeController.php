@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Candidate;
 
 use App\Http\Controllers\Controller;
 use App\Models\Challenge;
-use App\Models\Submission;
+use App\Models\ChallengeSubmission;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
@@ -13,7 +13,10 @@ class ChallengeController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $joinedChallengeIds = $user->submissions()
+        $profile = $user->candidateProfile;
+        if (!$profile) abort(403, 'Candidate profile not found.');
+
+        $joinedChallengeIds = ChallengeSubmission::where('candidate_profile_id', $profile->id)
             ->pluck('challenge_id')
             ->toArray();
 
@@ -27,7 +30,7 @@ class ChallengeController extends Controller
             ->take(10)
             ->get();
 
-        $myChallenges = $user->submissions()
+        $myChallenges = ChallengeSubmission::where('candidate_profile_id', $profile->id)
             ->with(['challenge:id,title,slug,company_id', 'challenge.company:id,name,logo,slug'])
             ->latest()
             ->take(10)
@@ -43,10 +46,11 @@ class ChallengeController extends Controller
     {
         $challenge->load(['company:id,name,logo,slug,description,website,location', 'requiredSkills:id,name']);
         $user = Auth::user();
+        $profile = $user->candidateProfile;
 
-        $submission = $user->submissions()
+        $submission = $profile ? ChallengeSubmission::where('candidate_profile_id', $profile->id)
             ->where('challenge_id', $challenge->id)
-            ->first();
+            ->first() : null;
 
         return Inertia::render('Candidate/Challenges/Show', [
             'challenge' => $challenge,
@@ -66,14 +70,16 @@ class ChallengeController extends Controller
         }
 
         $user = Auth::user();
+        $profile = $user->candidateProfile;
+        if (!$profile) abort(403, 'Candidate profile not found.');
 
         // Check if user already joined
-        $existingSubmission = $user->submissions()
+        $existingChallengeSubmission = ChallengeSubmission::where('candidate_profile_id', $profile->id)
             ->where('challenge_id', $challenge->id)
             ->first();
 
-        if ($existingSubmission) {
-            return redirect()->route('candidate.submissions.edit', $existingSubmission)
+        if ($existingChallengeSubmission) {
+            return redirect()->route('candidate.submissions.edit', $existingChallengeSubmission)
                 ->with('info', __('You have already joined this challenge.'));
         }
 
@@ -86,11 +92,9 @@ class ChallengeController extends Controller
         }
 
         // Create draft submission
-        $submission = Submission::create([
+        $submission = ChallengeSubmission::create([
             'challenge_id' => $challenge->id,
-            'user_id' => Auth::id(),
-            'title' => 'Draft: ' . $challenge->title,
-            'description' => '',
+            'candidate_profile_id' => $profile->id,
             'status' => 'draft',
         ]);
 

@@ -12,10 +12,9 @@ class CompanySubmissionResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'title' => $this->title,
-            'description' => $this->description,
-            'repository_url' => $this->repository_url,
-            'live_demo_url' => $this->live_demo_url,
+            'github_url' => $this->github_url,
+            'live_url' => $this->live_url,
+            'document_url' => $this->document_url,
             'notes' => $this->notes,
             'status' => $this->status,
             'status_label' => match($this->status) {
@@ -29,13 +28,13 @@ class CompanySubmissionResource extends JsonResource
             },
             'submitted_at' => $this->submitted_at,
             'created_at' => $this->created_at,
-            'candidate' => $this->whenLoaded('user', fn () => [
-                'id' => $this->user->id,
-                'name' => $this->user->name,
-                'email' => $this->user->email,
-                'avatar' => $this->user->avatar,
-                'headline' => $this->user->candidateProfile?->professional_headline,
-                'profile_completion' => $this->user->candidateProfile?->profile_completion,
+            'candidate' => $this->whenLoaded('candidateProfile', fn () => [
+                'id' => $this->candidateProfile->user->id,
+                'name' => $this->candidateProfile->user->name,
+                'email' => $this->candidateProfile->user->email,
+                'avatar' => $this->candidateProfile->user->avatar,
+                'headline' => $this->candidateProfile->professional_headline,
+                'profile_completion' => $this->candidateProfile->profile_completion,
             ]),
             'challenge' => $this->whenLoaded('challenge', fn () => [
                 'id' => $this->challenge->id,
@@ -45,17 +44,14 @@ class CompanySubmissionResource extends JsonResource
             ]),
             'files' => $this->whenLoaded('files', fn () => $this->files->map(fn ($file) => [
                 'id' => $file->id,
-                'original_name' => $file->original_name,
+                'file_name' => $file->file_name,
                 'file_size' => $file->file_size,
                 'mime_type' => $file->mime_type,
             ])),
-            'evaluations' => $this->whenLoaded('evaluations', fn () => EvaluationResource::collection($this->evaluations)),
-            'overall_score' => $this->whenLoaded('evaluations', function () {
-                $scores = $this->evaluations->where('is_final', true)->pluck('score')->filter();
-                return $scores->isNotEmpty() ? round($scores->avg(), 2) : null;
-            }),
-            'my_evaluation' => $this->whenLoaded('evaluations', function () {
-                return $this->evaluations->firstWhere('evaluator_id', auth()->id());
+            'evaluations' => $this->whenLoaded('reviews', fn () => EvaluationResource::collection($this->reviews)),
+            'overall_score' => $this->final_score,
+            'my_evaluation' => $this->whenLoaded('reviews', function () {
+                return $this->reviews->firstWhere('reviewer_id', auth()->id());
             }),
         ];
     }
