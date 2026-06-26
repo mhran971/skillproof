@@ -7,19 +7,32 @@
         "dev": "vite"
     },
     "devDependencies": {
+        "@headlessui/react": "^2.0.0",
+        "@inertiajs/react": "^2.0.0",
+        "@tailwindcss/forms": "^0.5.3",
         "@tailwindcss/vite": "^4.0.0",
+        "@vitejs/plugin-react": "^4.7.0",
+        "autoprefixer": "^10.4.12",
         "axios": "^1.11.0",
         "concurrently": "^9.0.1",
         "laravel-vite-plugin": "^2.0.0",
-        "tailwindcss": "^4.0.0",
+        "postcss": "^8.4.31",
+        "react": "^18.3.1",
+        "react-dom": "^18.2.0",
+        "tailwindcss": "^3.2.1",
+        "typescript": "^6.0.3",
         "vite": "^7.0.7"
     },
     "dependencies": {
+        "@inertiajs/react": "^3.5.0",
         "@tanstack/react-query": "^5.101.1",
+        "@types/react": "^19.2.17",
+        "@types/react-dom": "^19.2.3",
         "date-fns": "^4.4.0",
         "date-fns-tz": "^3.2.0",
         "i18next": "^26.3.2",
         "i18next-browser-languagedetector": "^8.2.1",
+        "lucide-react": "^1.21.0",
         "react-hot-toast": "^2.6.0",
         "react-i18next": "^17.0.8"
     }
