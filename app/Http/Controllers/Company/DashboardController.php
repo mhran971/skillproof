@@ -4,8 +4,7 @@ namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
 use App\Models\Challenge;
-use App\Models\Submission;
-use App\Models\Evaluation;
+use App\Models\ChallengeSubmission;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -24,25 +23,23 @@ class DashboardController extends Controller
         $stats = [
             'total_challenges' => (clone $challenges)->count(),
             'published_challenges' => (clone $challenges)->where('is_published', true)->count(),
-            'total_submissions' => Submission::whereIn('challenge_id', $challengeIds)->count(),
-            'pending_review' => Submission::whereIn('challenge_id', $challengeIds)->where('status', 'submitted')->count(),
-            'under_review' => Submission::whereIn('challenge_id', $challengeIds)->where('status', 'under_review')->count(),
-            'accepted_count' => Submission::whereIn('challenge_id', $challengeIds)->where('status', 'accepted')->count(),
-            'average_score' => Evaluation::whereHas('submission', function ($q) use ($challengeIds) {
-                $q->whereIn('challenge_id', $challengeIds);
-            })->avg('score') ?? 0,
+            'total_submissions' => ChallengeSubmission::whereIn('challenge_id', $challengeIds)->count(),
+            'pending_review' => ChallengeSubmission::whereIn('challenge_id', $challengeIds)->where('status', 'submitted')->count(),
+            'under_review' => ChallengeSubmission::whereIn('challenge_id', $challengeIds)->where('status', 'under_review')->count(),
+            'accepted_count' => ChallengeSubmission::whereIn('challenge_id', $challengeIds)->where('status', 'accepted')->count(),
+            'average_score' => ChallengeSubmission::whereIn('challenge_id', $challengeIds)->avg('final_score') ?? 0,
         ];
 
-        $recentSubmissions = Submission::with(['user:id,name,email,avatar', 'challenge:id,title,slug'])
+        $recentSubmissions = ChallengeSubmission::with(['candidateProfile.user:id,name,email,avatar', 'challenge:id,title,slug'])
             ->whereIn('challenge_id', $challengeIds)
             ->latest()
             ->take(5)
             ->get()
             ->map(fn ($sub) => [
                 'id' => $sub->id,
-                'title' => $sub->title,
-                'candidate_name' => $sub->user->name,
-                'candidate_avatar' => $sub->user->avatar,
+                'title' => $sub->challenge->title, // ChallengeSubmission doesn't have a title, using challenge title
+                'candidate_name' => $sub->candidateProfile->user->name,
+                'candidate_avatar' => $sub->candidateProfile->user->avatar,
                 'challenge_title' => $sub->challenge->title,
                 'challenge_slug' => $sub->challenge->slug,
                 'status' => $sub->status,
