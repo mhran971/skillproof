@@ -30,7 +30,10 @@ Route::get('/dashboard', function () {
     if (auth()->user()->hasRole('company')) {
         return redirect()->route('company.dashboard');
     }
-    return redirect()->route('candidate.dashboard');
+    if (auth()->user()->hasRole('candidate')) {
+        return redirect()->route('candidate.dashboard');
+    }
+    return redirect()->route('profile.edit');
 })->middleware(['auth'])->name('dashboard');
 
 Route::get('/challenges', [PublicChallengeController::class, 'index'])->name('public.challenges.index');

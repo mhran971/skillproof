@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Candidate;
 
 use App\Http\Controllers\Controller;
 use App\Models\ChallengeSubmission;
-use App\Models\JobApplication;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -14,13 +13,17 @@ class DashboardController extends Controller
     {
         $profile = $request->user()->candidateProfile;
 
+        if (!$profile) {
+            abort(403, 'Candidate profile not found.');
+        }
+
         $stats = [
             'profile_completion' => $profile->profile_completion,
             'reputation_score' => $profile->reputation_score,
             'job_readiness_score' => $profile->job_readiness_score,
             'total_submissions' => ChallengeSubmission::where('candidate_profile_id', $profile->id)->count(),
             'accepted_submissions' => ChallengeSubmission::where('candidate_profile_id', $profile->id)->where('status', 'accepted')->count(),
-            'pending_applications' => JobApplication::where('candidate_profile_id', $profile->id)->where('status', 'applied')->count(),
+            'pending_applications' => 0, // Temporarily disabled until JobApplication table exists
         ];
 
         $recentSubmissions = ChallengeSubmission::with('challenge')
