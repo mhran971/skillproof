@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::create('job_applications', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('job_id')->constrained()->onDelete('cascade');
-            $table->foreignId('candidate_profile_id')->constrained()->onDelete('cascade');
+            $table->foreignId('job_id')->constrained('job_postings')->onDelete('cascade');
+            $table->foreignId('candidate_profile_id')->constrained('candidate_profiles')->onDelete('cascade');
             $table->enum('status', ['applied', 'under_review', 'interviewing', 'offered', 'rejected', 'withdrawn'])->default('applied');
             $table->text('cover_letter')->nullable();
             $table->decimal('expected_salary', 10, 2)->nullable();
